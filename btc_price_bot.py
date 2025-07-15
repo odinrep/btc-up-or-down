@@ -75,8 +75,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message.text.lower()
     if msg == "hi":
         await update.message.reply_text("goliath online!")
-    elif msg == "/start":
-        await update.message.reply_text("You've been registered for BTC alerts!")
     else:
         await update.message.reply_text("Say 'hi' to check if I'm alive.")
 
@@ -223,6 +221,21 @@ def alert_if_above_target():
         print("Alert error:", str(e))
 
 scheduler.add_job(alert_if_above_target, 'interval', minutes=2)
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global CHAT_ID
+    CHAT_ID = update.effective_chat.id
+
+    # Save chat ID to file
+    with open(chat_id_path, "w") as f:
+        f.write(str(CHAT_ID))
+
+    await update.message.reply_text(
+        "Welcome! You've been registered for BTC alerts.\nYou'll get daily 12PM updates and auto alerts if price exceeds your target."
+    )
+
+app.add_handler(CommandHandler("start", start_command))
+
 
 # === START BOT ===
 app.run_polling()
