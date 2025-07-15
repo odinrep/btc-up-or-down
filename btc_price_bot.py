@@ -10,7 +10,7 @@ CHAT_ID = None
 
 bot = Bot(token=BOT_TOKEN)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
-loop = asyncio.get_event_loop()  # for thread-safe scheduling
+loop = asyncio.get_event_loop_policy().get_event_loop()  # for thread-safe scheduling
 
 # === BTC PRICE TASK ===
 def fetch_btc_price():
