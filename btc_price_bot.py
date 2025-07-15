@@ -171,6 +171,7 @@ async def btcday(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app.add_handler(CommandHandler("btcday", btcday))
 
 # === SCHEDULER ===
+scheduler = BackgroundScheduler(timezone="Asia/Singapore")
 scheduler.add_job(fetch_btc_price, 'cron', hour=12, minute=0)
 scheduler.add_job(alert_if_above_target, 'interval', minutes=2)
 scheduler.start()
