@@ -29,7 +29,7 @@ bot = Bot(token=BOT_TOKEN)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 loop = asyncio.get_event_loop_policy().get_event_loop()
 
-# === TASK: FETCH BTC PRICE FOR 12PM ===
+# === 12PM SGT BTC CLOSE ===
 def fetch_btc_price():
     now_sgt = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
     noon_sgt = now_sgt.replace(hour=12, minute=0, second=0, microsecond=0)
@@ -52,7 +52,7 @@ def fetch_btc_price():
             loop
         )
 
-# === AUTO ALERT CHECK (+2% and -2%) ===
+# === ALERT SYSTEM ===
 def alert_if_price_outside_bounds():
     global notified_above, notified_below
     try:
@@ -106,22 +106,24 @@ def alert_if_price_outside_bounds():
     except Exception as e:
         print("Alert error:", str(e))
 
-# === MESSAGE HANDLERS ===
-async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# === /start ===
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID
     CHAT_ID = update.effective_chat.id
     with open(chat_id_path, "w") as f:
         f.write(str(CHAT_ID))
+    await update.message.reply_text(
+        "✅ You've been registered for BTC alerts!\n\n"
+        "📬 You'll receive:\n"
+        "- Daily 12PM BTC/USDT price\n"
+        "- Alerts when price exceeds ±2% from 00:00 close."
+    )
 
-    msg = update.message.text.lower()
-    if msg == "hi":
-        await update.message.reply_text("goliath online!")
-    else:
-        await update.message.reply_text("Say 'hi' to check if I'm alive.")
+# === Fallback text handler ===
+async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Say 'hi' to check if I'm alive.")
 
-app.add_handler(CommandHandler("start", handle))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
-
+# === /btcnow ===
 async def btcnow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = 'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT'
     resp = requests.get(url)
@@ -131,19 +133,51 @@ async def btcnow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("❌ Failed to fetch BTC price.")
 
+# === /btcday ===
+async def btcday(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        now_sgt = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+        today = now_sgt.date()
+        sgt_midnight = datetime.datetime.combine(today, datetime.time(0, 0), tzinfo=datetime.timezone(datetime.timedelta(hours=8)))
+        utc_midnight = sgt_midnight.astimezone(datetime.timezone.utc)
+        end_time = int((utc_midnight + datetime.timedelta(minutes=1)).timestamp() * 1000)
+        start_time = end_time - 60_000
+
+        url = f"https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&startTime={start_time}&endTime={end_time}&limit=1"
+        resp = requests.get(url)
+        if resp.status_code != 200 or not resp.json():
+            await update.message.reply_text("⚠️ No 00:00 SGT candle found for today.")
+            return
+
+        close_price = float(resp.json()[0][4])
+        plus_2 = close_price * 1.02
+        minus_2 = close_price * 0.98
+
+        await update.message.reply_text(
+            f"📆 /btcday ({today})\n"
+            f"🕛 00:00 AM SGT close: ${close_price:,.2f}\n"
+            f"🔼 +2% target: ${plus_2:,.2f}\n"
+            f"🔽 -2% target: ${minus_2:,.2f}"
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+# === REGISTER HANDLERS ===
+app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("btcnow", btcnow))
+app.add_handler(CommandHandler("btcday", btcday))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
 
 # === SCHEDULER ===
 scheduler = BackgroundScheduler(timezone="Asia/Singapore")
 scheduler.add_job(fetch_btc_price, 'cron', hour=12, minute=0)
 scheduler.add_job(alert_if_price_outside_bounds, 'interval', minutes=2)
 
-# === MAIN ENTRY POINT ===
+# === MAIN ===
 async def main():
     scheduler.start()
     await app.run_polling()
 
 if __name__ == "__main__":
-    import nest_asyncio
     nest_asyncio.apply()
     loop.run_until_complete(main())
