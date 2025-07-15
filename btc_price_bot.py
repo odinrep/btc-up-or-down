@@ -91,7 +91,7 @@ async def btc_12am(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if resp.status_code == 200 and resp.json():
             close_price = float(resp.json()[0][4])
-            plus_2 = close_price * 1.02
+            plus_2 = close_price * 0.98
             await update.message.reply_text(
                 f"🕛 BTC/USDT close at 00:00 AM SGT on {date_str}: ${close_price:,.2f}\n"
                 f"🔼 +2% target: ${plus_2:,.2f}"
