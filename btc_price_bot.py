@@ -4,6 +4,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 import requests
 import asyncio
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 BOT_TOKEN = "8028470688:AAH1DZ4BdlMjQTlloFjm2BWilsWw4ZtP05I"
 CHAT_ID = None
@@ -172,7 +175,7 @@ def alert_if_above_target():
             return
 
         close_price = float(resp.json()[0][4])
-        target_price = close_price * 0.98
+        target_price = close_price * 0.90
 
         now_resp = requests.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
         if now_resp.status_code != 200:
