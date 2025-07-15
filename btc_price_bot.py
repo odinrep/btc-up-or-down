@@ -47,7 +47,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     CHAT_ID = update.effective_chat.id
     msg = update.message.text.lower()
     if msg == "hi":
-        await update.message.reply_text("Hello! I'm alive and listening.")
+        await update.message.reply_text("goliath online!")
     elif msg == "/start":
         await update.message.reply_text("Welcome! You'll get BTC/USDT price at 12PM daily.")
     else:
@@ -91,7 +91,7 @@ async def btc_12am(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if resp.status_code == 200 and resp.json():
             close_price = float(resp.json()[0][4])
-            plus_2 = close_price * 0.98
+            plus_2 = close_price * 1.02
             await update.message.reply_text(
                 f"🕛 BTC/USDT close at 00:00 AM SGT on {date_str}: ${close_price:,.2f}\n"
                 f"🔼 +2% target: ${plus_2:,.2f}"
@@ -165,7 +165,7 @@ def alert_if_above_target():
             return
 
         close_price = float(resp.json()[0][4])
-        target_price = close_price * 1.02
+        target_price = close_price * 0.98
 
         now_resp = requests.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
         if now_resp.status_code != 200:
