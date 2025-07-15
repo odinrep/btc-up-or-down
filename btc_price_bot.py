@@ -194,7 +194,8 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 scheduler = BackgroundScheduler(timezone="Asia/Singapore")
 scheduler.add_job(fetch_btc_price, 'cron', hour=12, minute=0)
 scheduler.add_job(alert_if_above_target, 'interval', minutes=2)
-scheduler.start()
 
 # === RUN BOT ===
 app.run_polling()
+
+scheduler.start()
