@@ -6,6 +6,7 @@ import requests
 import asyncio
 import warnings
 import os
+import nest_asyncio
 
 # === GLOBALS ===
 CHAT_ID = None
@@ -137,10 +138,11 @@ scheduler = BackgroundScheduler(timezone="Asia/Singapore")
 scheduler.add_job(fetch_btc_price, 'cron', hour=12, minute=0)
 scheduler.add_job(alert_if_price_outside_bounds, 'interval', minutes=2)
 
-# === RUN BOT ===
+# === MAIN ENTRY POINT ===
 async def main():
     scheduler.start()
     await app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    nest_asyncio.apply()
+    loop.run_until_complete(main())
