@@ -6,10 +6,11 @@ import requests
 import asyncio
 
 BOT_TOKEN = "8028470688:AAH1DZ4BdlMjQTlloFjm2BWilsWw4ZtP05I"
-CHAT_ID = None  # Will be set dynamically on /start or message
+CHAT_ID = None
 
 bot = Bot(token=BOT_TOKEN)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
+loop = asyncio.get_event_loop()  # for thread-safe scheduling
 
 # === BTC PRICE TASK ===
 def fetch_btc_price():
@@ -25,16 +26,22 @@ def fetch_btc_price():
     if resp.status_code == 200 and resp.json():
         close_price = resp.json()[0][4]
         if CHAT_ID:
-            asyncio.create_task(bot.send_message(
-                chat_id=CHAT_ID,
-                text=f"📈 BTC/USDT close at 12:00 PM SGT: ${close_price}"
-            ))
+            asyncio.run_coroutine_threadsafe(
+                bot.send_message(
+                    chat_id=CHAT_ID,
+                    text=f"📈 BTC/USDT close at 12:00 PM SGT: ${close_price}"
+                ),
+                loop
+            )
     else:
         if CHAT_ID:
-            asyncio.create_task(bot.send_message(
-                chat_id=CHAT_ID,
-                text="⚠️ Failed to fetch BTC/USDT 12PM price."
-            ))
+            asyncio.run_coroutine_threadsafe(
+                bot.send_message(
+                    chat_id=CHAT_ID,
+                    text="⚠️ Failed to fetch BTC/USDT 12PM price."
+                ),
+                loop
+            )
 
 # === SCHEDULER ===
 scheduler = BackgroundScheduler(timezone="Asia/Singapore")
@@ -176,14 +183,17 @@ def alert_if_above_target():
         print(f"[Check] Now: {current_price:.2f} | Target: {target_price:.2f} | Notified: {notified_today}")
 
         if current_price >= target_price and not notified_today and CHAT_ID:
-            asyncio.create_task(bot.send_message(
-                chat_id=CHAT_ID,
-                text=(
-                    f"🚨 BTC has hit your +2% target!\n"
-                    f"🎯 Target: ${target_price:,.2f}\n"
-                    f"📈 Now: ${current_price:,.2f}"
-                )
-            ))
+            asyncio.run_coroutine_threadsafe(
+                bot.send_message(
+                    chat_id=CHAT_ID,
+                    text=(
+                        f"🚨 BTC has hit your +2% target!\n"
+                        f"🎯 Target: ${target_price:,.2f}\n"
+                        f"📈 Now: ${current_price:,.2f}"
+                    )
+                ),
+                loop
+            )
             notified_today = True
 
         if now_sgt.hour == 0 and now_sgt.minute < 5:
