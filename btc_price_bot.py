@@ -5,6 +5,18 @@ import datetime
 import requests
 import asyncio
 import warnings
+import os
+
+# Load CHAT_ID from file if available
+CHAT_ID = None
+chat_id_path = "chat_id.txt"
+
+if os.path.exists(chat_id_path):
+    try:
+        with open(chat_id_path) as f:
+            CHAT_ID = int(f.read().strip())
+    except Exception:
+        CHAT_ID = None
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -55,11 +67,16 @@ scheduler.start()
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global CHAT_ID
     CHAT_ID = update.effective_chat.id
+
+    # Save to file so we remember it after restart
+    with open(chat_id_path, "w") as f:
+	f.write(str(CHAT_ID))
+
     msg = update.message.text.lower()
     if msg == "hi":
         await update.message.reply_text("goliath online!")
     elif msg == "/start":
-        await update.message.reply_text("Welcome! You'll get BTC/USDT price at 12PM daily.")
+        await update.message.reply_text("You've been registered for BTC alerts!")
     else:
         await update.message.reply_text("Say 'hi' to check if I'm alive.")
 
